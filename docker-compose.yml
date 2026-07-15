@@ -1,0 +1,125 @@
+version: '3.9'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: whobetter-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: whobetter
+      RABBITMQ_DEFAULT_PASS: whobetter
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - whobetter-network
+
+  postgres-user:
+    image: postgres:16-alpine
+    container_name: whobetter-postgres-user
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: whobetter
+      POSTGRES_PASSWORD: whobetter
+    volumes:
+      - postgres_user_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whobetter -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - whobetter-network
+
+  postgres-match:
+    image: postgres:16-alpine
+    container_name: whobetter-postgres-match
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: match_db
+      POSTGRES_USER: whobetter
+      POSTGRES_PASSWORD: whobetter
+    volumes:
+      - postgres_match_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whobetter -d match_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - whobetter-network
+
+  postgres-prediction:
+    image: postgres:16-alpine
+    container_name: whobetter-postgres-prediction
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: prediction_db
+      POSTGRES_USER: whobetter
+      POSTGRES_PASSWORD: whobetter
+    volumes:
+      - postgres_prediction_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whobetter -d prediction_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - whobetter-network
+
+  postgres-scoring:
+    image: postgres:16-alpine
+    container_name: whobetter-postgres-scoring
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: scoring_db
+      POSTGRES_USER: whobetter
+      POSTGRES_PASSWORD: whobetter
+    volumes:
+      - postgres_scoring_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whobetter -d scoring_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - whobetter-network
+
+  postgres-ranking:
+    image: postgres:16-alpine
+    container_name: whobetter-postgres-ranking
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_DB: ranking_db
+      POSTGRES_USER: whobetter
+      POSTGRES_PASSWORD: whobetter
+    volumes:
+      - postgres_ranking_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whobetter -d ranking_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - whobetter-network
+
+networks:
+  whobetter-network:
+    driver: bridge
+
+volumes:
+  postgres_user_data:
+  postgres_match_data:
+  postgres_prediction_data:
+  postgres_scoring_data:
+  postgres_ranking_data:
