@@ -22,7 +22,7 @@ services:
     image: postgres:16-alpine
     container_name: whobetter-postgres-user
     ports:
-      - "5432:5432"
+      - "5437:5432"
     environment:
       POSTGRES_DB: user_db
       POSTGRES_USER: whobetter
