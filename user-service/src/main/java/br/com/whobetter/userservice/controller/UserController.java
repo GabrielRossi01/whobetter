@@ -1,4 +1,4 @@
-package br.com.whobetter.userservice.controllers;
+package br.com.whobetter.userservice.controller;
 
 import br.com.whobetter.userservice.domain.User;
 import br.com.whobetter.userservice.dto.CreateUserRequest;

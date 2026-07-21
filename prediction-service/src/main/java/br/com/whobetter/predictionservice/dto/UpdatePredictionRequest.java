@@ -1,0 +1,15 @@
+package br.com.whobetter.predictionservice.dto;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+
+public record UpdatePredictionRequest(
+
+        @NotNull
+        @Min(0)
+        Integer predictedHomeScore,
+
+        @NotNull
+        @Min(0)
+        Integer predictedAwayScore
+) {}
