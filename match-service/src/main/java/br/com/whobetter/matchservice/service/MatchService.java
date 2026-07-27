@@ -7,6 +7,8 @@ import br.com.whobetter.matchservice.dto.SetMatchResultRequest;
 import br.com.whobetter.matchservice.exception.GroupNotFoundException;
 
 import br.com.whobetter.matchservice.exception.MatchNotFoundException;
+import br.com.whobetter.matchservice.messaging.MatchEventPublisher;
+import br.com.whobetter.matchservice.messaging.MatchFinishedEvent;
 import br.com.whobetter.matchservice.repository.MatchRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ public class MatchService {
 
     private final MatchRepository matchRepository;
     private final GroupServiceClient groupServiceClient;
+    private final MatchEventPublisher matchEventPublisher;
 
     @Transactional
     public Match create(CreateMatchRequest request) {
@@ -57,7 +60,19 @@ public class MatchService {
     public Match setResult(UUID id, SetMatchResultRequest request) {
         Match match = findById(id);
         match.setResult(request.homeScore(), request.awayScore());
-        return matchRepository.save(match);
+        Match savedMatch = matchRepository.save(match);
+
+        MatchFinishedEvent event = new MatchFinishedEvent(
+                savedMatch.getId(),
+                savedMatch.getGroupId(),
+                savedMatch.getHomeScore(),
+                savedMatch.getAwayScore(),
+                savedMatch.getStatus().name()
+        );
+
+        matchEventPublisher.publishMatchFinished(event);
+
+        return savedMatch;
     }
 
     @Transactional
