@@ -9,6 +9,8 @@ import br.com.whobetter.scoringservice.dto.PredictionResponse;
 import br.com.whobetter.scoringservice.exception.MatchNotFinishedException;
 import br.com.whobetter.scoringservice.exception.ScoreAlreadyCalculatedException;
 import br.com.whobetter.scoringservice.exception.ScoreNotFoundException;
+import br.com.whobetter.scoringservice.messaging.ScoreEventPublisher;
+import br.com.whobetter.scoringservice.messaging.ScoresCalculatedEvent;
 import br.com.whobetter.scoringservice.repository.ScoreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ public class ScoreService {
     private final ScoreRepository scoreRepository;
     private final MatchServiceClient matchServiceClient;
     private final PredictionServiceClient predictionServiceClient;
+    private final ScoreEventPublisher scoreEventPublisher;
 
     @Transactional
     public List<Score> scoreMatch(UUID matchId) {
@@ -55,19 +58,28 @@ public class ScoreService {
                 case MISS -> 0;
             };
 
-            Score score = new Score(
+            scores.add(new Score(
                     prediction.matchId(),
                     prediction.groupId(),
                     prediction.userId(),
                     prediction.id(),
                     points,
                     scoringType
-            );
-
-            scores.add(score);
+            ));
         }
 
-        return scoreRepository.saveAll(scores);
+        List<Score> savedScores = scoreRepository.saveAll(scores);
+
+        List<UUID> affectedUserIds = savedScores.stream()
+                .map(Score::getUserId)
+                .distinct()
+                .toList();
+
+        scoreEventPublisher.publishScoresCalculated(
+                new ScoresCalculatedEvent(matchId, match.groupId(), affectedUserIds)
+        );
+
+        return savedScores;
     }
 
     public Score findById(UUID id) {
