@@ -12,7 +12,9 @@ import br.com.whobetter.scoringservice.exception.ScoreNotFoundException;
 import br.com.whobetter.scoringservice.messaging.ScoreEventPublisher;
 import br.com.whobetter.scoringservice.messaging.ScoresCalculatedEvent;
 import br.com.whobetter.scoringservice.repository.ScoreRepository;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,15 @@ public class ScoreService {
     private final PredictionServiceClient predictionServiceClient;
     private final ScoreEventPublisher scoreEventPublisher;
 
+    @Retryable(
+            includes = FeignException.class,
+            excludes =  FeignException.NotFound.class,
+            maxRetries = 3,
+            delay = 1000,
+            multiplier = 2.0,
+            maxDelay = 10000,
+            jitter = 200
+    )
     @Transactional
     public List<Score> scoreMatch(UUID matchId) {
         MatchResponse match = matchServiceClient.findById(matchId);

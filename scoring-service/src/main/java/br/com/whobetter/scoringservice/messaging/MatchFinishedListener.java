@@ -14,14 +14,12 @@ public class MatchFinishedListener {
 
     private final ScoreService scoreService;
 
-    @RabbitListener(queues = RabbitMqConfig.MATCH_FINISHED_QUEUE)
+    @RabbitListener(
+            queues = RabbitMqConfig.MATCH_FINISHED_QUEUE,
+            containerFactory = "rabbitListenerContainerFactory"
+    )
     public void handle(DomainEvent<MatchFinishedEvent> event) {
         log.info("Recebido match.finished evento para matchId={}", event.payload().matchId());
-
-        try {
-            scoreService.scoreMatch(event.payload().matchId());
-        } catch (Exception ex) {
-            log.error("Falha ao processar pontuação para matchId={}: {}", event.payload().matchId(), ex.getMessage(), ex);
-        }
+        scoreService.scoreMatch(event.payload().matchId());
     }
 }

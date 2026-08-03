@@ -16,15 +16,12 @@ public class ScoresCalculatedListener {
 
     private final RankingService rankingService;
 
-    @RabbitListener(queues = RabbitMqConfig.SCORES_CALCULATED_QUEUE)
+    @RabbitListener(
+            queues = RabbitMqConfig.SCORES_CALCULATED_QUEUE,
+            containerFactory = "rabbitListenerContainerFactory")
     public void handle(DomainEvent<ScoresCalculatedEvent> event) {
         UUID groupId = event.payload().groupId();
         log.info("Recebido scores.calculated evento para groupId={}", groupId);
-
-        try {
-            rankingService.refreshRanking(groupId);
-        } catch (Exception ex) {
-            log.error("Falha ao recarregar ranking com groupId={}: {}", groupId, ex.getMessage(), ex);
-        }
+        rankingService.refreshRanking(groupId);
     }
 }

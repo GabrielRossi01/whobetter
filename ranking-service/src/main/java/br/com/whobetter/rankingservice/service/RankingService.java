@@ -5,7 +5,9 @@ import br.com.whobetter.rankingservice.domain.RankingEntry;
 import br.com.whobetter.rankingservice.dto.ScoreResponse;
 import br.com.whobetter.rankingservice.exception.RankingNotFoundException;
 import br.com.whobetter.rankingservice.repository.RankingEntryRepository;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,15 @@ public class RankingService {
     private final RankingEntryRepository rankingEntryRepository;
     private final ScoringServiceClient scoringServiceClient;
 
+    @Retryable(
+            includes = FeignException.class,
+            excludes = FeignException.NotFound.class,
+            maxRetries = 3,
+            delay = 1000,
+            multiplier = 2.0,
+            maxDelay = 10000,
+            jitter = 200
+    )
     @Transactional
     public List<RankingEntry> refreshRanking(UUID groupId) {
         List<ScoreResponse> scores = scoringServiceClient.findByGroupId(groupId);
