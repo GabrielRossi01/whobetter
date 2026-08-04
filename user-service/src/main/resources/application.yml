@@ -44,3 +44,14 @@ management:
 logging:
   level:
     br.com.whobetter.userservice: DEBUG
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+  packages-to-scan: br.com.whobetter.userservice.controller

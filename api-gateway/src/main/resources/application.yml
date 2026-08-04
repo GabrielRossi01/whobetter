@@ -12,10 +12,40 @@ spring:
             locator:
               enabled: false
           routes:
-            - id: user-service
-              uri: lb://user-service
+            - id: user-service-docs
+              uri: lb://USER-SERVICE
               predicates:
-                - Path=/api/users/**,/api/groups/**
+                - Path=/user-service/v3/api-docs
+              filters:
+                - RewritePath=/user-service/v3/api-docs, /v3/api-docs
+
+            - id: match-service-docs
+              uri: lb://match-service
+              predicates:
+                - Path=/match-service/v3/api-docs
+              filters:
+                - RewritePath=/match-service/v3/api-docs, /v3/api-docs
+
+            - id: prediction-service-docs
+              uri: lb://prediction-service
+              predicates:
+                - Path=/prediction-service/v3/api-docs
+              filters:
+                - RewritePath=/prediction-service/v3/api-docs, /v3/api-docs
+
+            - id: ranking-service-docs
+              uri: lb://ranking-service
+              predicates:
+                - Path=/ranking-service/v3/api-docs
+              filters:
+                - RewritePath=/ranking-service/v3/api-docs, /v3/api-docs
+
+            - id: scoring-service-docs
+              uri: lb://scoring-service
+              predicates:
+                - Path=/scoring-service/v3/api-docs
+              filters:
+                - RewritePath=/scoring-service/v3/api-docs, /v3/api-docs
 
             - id: match-service
               uri: lb://match-service
@@ -31,6 +61,33 @@ spring:
               uri: lb://ranking-service
               predicates:
                 - Path=/api/rankings/**
+
+            - id: scoring-service
+              uri: lb://scoring-service
+              predicates:
+                - Path=/api/scores/**
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    urls:
+      - name: api-gateway
+        url: /v3/api-docs
+      - name: user-service
+        url: /user-service/v3/api-docs
+      - name: match-service
+        url: /match-service/v3/api-docs
+      - name: prediction-service
+        url: /prediction-service/v3/api-docs
+      - name: ranking-service
+        url: /ranking-service/v3/api-docs
+      - name: scoring-service
+        url: /scoring-service/v3/api-docs
 
 eureka:
   client:

@@ -6,6 +6,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/prediction-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/prediction-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/ranking-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/ranking-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/scoring-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/scoring-service.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/user-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/user-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/whobetter.iml" filepath="$PROJECT_DIR$/whobetter.iml" />
     </modules>
   </component>
