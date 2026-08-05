@@ -8,6 +8,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface RankingEntryRepository extends JpaRepository<RankingEntry, UUID> {
-    List<RankingEntry> findByGroupIdOrderByPositionAsc(UUID groupId);
+    List<RankingEntry> findByGroupIdOrderByRankPositionAsc(UUID groupId);
     Optional<RankingEntry> findByGroupIdAndUserId(UUID groupId, UUID userId);
 }

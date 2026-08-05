@@ -64,7 +64,7 @@ public class RankingService {
     }
 
     public List<RankingEntry> findByGroupId(UUID groupId) {
-        List<RankingEntry> entries = rankingEntryRepository.findByGroupIdOrderByPositionAsc(groupId);
+        List<RankingEntry> entries = rankingEntryRepository.findByGroupIdOrderByRankPositionAsc(groupId);
 
         if (entries.isEmpty()) {
             throw new RankingNotFoundException(groupId);

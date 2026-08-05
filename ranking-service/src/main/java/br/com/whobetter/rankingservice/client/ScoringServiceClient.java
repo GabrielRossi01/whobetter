@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import java.util.List;
 import java.util.UUID;
 
-@FeignClient(name = "scoring_service")
+@FeignClient(name = "scoring-service")
 public interface ScoringServiceClient {
 
     @GetMapping("/scores/group/{groupId}")
