@@ -7,6 +7,11 @@ import br.com.whobetter.predictionservice.exception.DuplicatePredictionException
 import br.com.whobetter.predictionservice.exception.PredictionNotFoundException;
 import br.com.whobetter.predictionservice.repository.PredictionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,18 +27,34 @@ public class PredictionService {
     private final MembershipValidator membershipValidator;
 
     @Transactional
+    @PreAuthorize("hasAuthority('SCOPE_predictions:write')")
     public Prediction create(CreatePredictionRequest request) {
-        matchValidator.validateMatchOpen(request.matchId(), request.groupId());
-        membershipValidator.validateUserMembership(request.groupId(), request.userId());
+        UUID authenticatedUserId = currentUserId();
 
-        if (predictionRepository.existsByMatchIdAndUserId(request.matchId(), request.userId())) {
-            throw new DuplicatePredictionException(request.matchId(), request.userId());
+        matchValidator.validateMatchOpen(
+                request.matchId(),
+                request.groupId()
+        );
+
+        membershipValidator.validateUserMembership(
+                request.groupId(),
+                authenticatedUserId
+        );
+
+        if (predictionRepository.existsByMatchIdAndUserId(
+                request.matchId(),
+                authenticatedUserId
+        )) {
+            throw new DuplicatePredictionException(
+                    request.matchId(),
+                    authenticatedUserId
+            );
         }
 
         Prediction prediction = new Prediction(
                 request.matchId(),
                 request.groupId(),
-                request.userId(),
+                authenticatedUserId,
                 request.predictedHomeScore(),
                 request.predictedAwayScore()
         );
@@ -41,32 +62,98 @@ public class PredictionService {
         return predictionRepository.save(prediction);
     }
 
+    @PreAuthorize("hasAuthority('SCOPE_predictions:read')")
     public Prediction findById(UUID id) {
-        return predictionRepository.findById(id)
-                .orElseThrow(() -> new PredictionNotFoundException(id));
+        return findPrediction(id);
     }
 
+    @PreAuthorize("hasAuthority('SCOPE_predictions:read')")
     public List<Prediction> findByMatchId(UUID matchId) {
         return predictionRepository.findByMatchId(matchId);
     }
 
+    @PreAuthorize("hasAuthority('SCOPE_predictions:read')")
     public List<Prediction> findByUserId(UUID userId) {
+        UUID authenticatedUserId = currentUserId();
+
+        if (!authenticatedUserId.equals(userId)) {
+            throw new AccessDeniedException(
+                    "O usuário não pode consultar previsões de outro usuário"
+            );
+        }
+
         return predictionRepository.findByUserId(userId);
     }
 
     @Transactional
+    @PreAuthorize("hasAuthority('SCOPE_predictions:write')")
     public Prediction update(UUID id, UpdatePredictionRequest request) {
-        Prediction prediction = findById(id);
-        matchValidator.validateMatchOpen(prediction.getMatchId(), prediction.getGroupId());
+        UUID authenticatedUserId = currentUserId();
+        Prediction prediction = findPrediction(id);
 
-        prediction.updateScores(request.predictedHomeScore(), request.predictedAwayScore());
+        ensureOwnership(prediction, authenticatedUserId);
+
+        matchValidator.validateMatchOpen(
+                prediction.getMatchId(),
+                prediction.getGroupId()
+        );
+
+        prediction.updateScores(
+                request.predictedHomeScore(),
+                request.predictedAwayScore()
+        );
+
         return predictionRepository.save(prediction);
     }
 
     @Transactional
+    @PreAuthorize("hasAuthority('SCOPE_predictions:write')")
     public void delete(UUID id) {
-        Prediction prediction = findById(id);
-        matchValidator.validateMatchOpen(prediction.getMatchId(), prediction.getGroupId());
+        UUID authenticatedUserId = currentUserId();
+        Prediction prediction = findPrediction(id);
+
+        ensureOwnership(prediction, authenticatedUserId);
+
+        matchValidator.validateMatchOpen(
+                prediction.getMatchId(),
+                prediction.getGroupId()
+        );
+
         predictionRepository.delete(prediction);
+    }
+
+    private Prediction findPrediction(UUID id) {
+        return predictionRepository.findById(id)
+                .orElseThrow(() -> new PredictionNotFoundException(id));
+    }
+
+    private void ensureOwnership(
+            Prediction prediction,
+            UUID authenticatedUserId
+    ) {
+        if (!prediction.getUserId().equals(authenticatedUserId)) {
+            throw new AccessDeniedException(
+                    "O usuário não pode alterar esta previsão"
+            );
+        }
+    }
+
+    private UUID currentUserId() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (!(authentication instanceof JwtAuthenticationToken jwtAuthentication)) {
+            throw new AccessDeniedException(
+                    "Usuário autenticado não possui um token JWT válido"
+            );
+        }
+
+        try {
+            return UUID.fromString(jwtAuthentication.getToken().getSubject());
+        } catch (IllegalArgumentException exception) {
+            throw new AccessDeniedException(
+                    "O claim 'sub' do token não contém um UUID válido"
+            );
+        }
     }
 }

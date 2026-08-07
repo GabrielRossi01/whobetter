@@ -5,6 +5,12 @@ spring:
   application:
     name: user-service
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8090/realms/whobetter
+
   datasource:
     url: jdbc:postgresql://localhost:5437/user_db
     username: whobetter

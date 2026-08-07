@@ -5,6 +5,7 @@ import br.com.whobetter.userservice.dto.CreateUserRequest;
 import br.com.whobetter.userservice.exception.EmailAlreadyUsedException;
 import br.com.whobetter.userservice.exception.UserNotFoundException;
 import br.com.whobetter.userservice.repository.UserRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -30,6 +31,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @PreAuthorize("hasAuthority('SCOPE_users:read')")
     public User findById(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));

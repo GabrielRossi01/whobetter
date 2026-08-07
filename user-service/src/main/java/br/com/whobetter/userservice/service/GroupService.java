@@ -10,6 +10,11 @@ import br.com.whobetter.userservice.repository.GroupMemberRepository;
 import br.com.whobetter.userservice.repository.GroupRepository;
 import br.com.whobetter.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,47 +31,105 @@ public class GroupService {
     private final InviteCodeGenerator inviteCodeGenerator;
 
     @Transactional
+    @PreAuthorize("hasAuthority('SCOPE_groups:write')")
     public Group create(CreateGroupRequest request) {
-        if (!userRepository.existsById(request.ownerId())) {
-            throw new UserNotFoundException(request.ownerId());
+        UUID authenticatedUserId = currentUserId();
+
+        if (!userRepository.existsById(authenticatedUserId)) {
+            throw new UserNotFoundException(authenticatedUserId);
         }
 
         String inviteCode = generateUniqueInviteCode();
-        Group group = new Group(request.name(), inviteCode, request.ownerId());
+
+        Group group = new Group(
+                request.name(),
+                inviteCode,
+                authenticatedUserId
+        );
+
         Group savedGroup = groupRepository.save(group);
 
-        groupMemberRepository.save(new GroupMember(savedGroup.getId(), request.ownerId()));
+        groupMemberRepository.save(
+                new GroupMember(
+                        savedGroup.getId(),
+                        authenticatedUserId
+                )
+        );
 
         return savedGroup;
     }
 
     @Transactional
-    public Group joinByInviteCode(String inviteCode, UUID userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new UserNotFoundException(userId);
+    @PreAuthorize("hasAuthority('SCOPE_groups:write')")
+    public Group joinByInviteCode(
+            String inviteCode,
+            UUID ignoredUserId
+    ) {
+        UUID authenticatedUserId = currentUserId();
+
+        if (!userRepository.existsById(authenticatedUserId)) {
+            throw new UserNotFoundException(authenticatedUserId);
         }
 
-        String normalizedInviteCode = inviteCode.toUpperCase(Locale.ROOT);
+        String normalizedInviteCode =
+                inviteCode.toUpperCase(Locale.ROOT);
 
-        Group group = groupRepository.findByInviteCode(normalizedInviteCode)
-                .orElseThrow(() -> new InviteCodeNotFoundException(inviteCode));
+        Group group = groupRepository
+                .findByInviteCode(normalizedInviteCode)
+                .orElseThrow(() ->
+                        new InviteCodeNotFoundException(inviteCode)
+                );
 
-        boolean alreadyMember = groupMemberRepository
-                .existsById_GroupIdAndId_UserId(group.getId(), userId);
+        boolean alreadyMember =
+                groupMemberRepository
+                        .existsById_GroupIdAndId_UserId(
+                                group.getId(),
+                                authenticatedUserId
+                        );
 
         if (alreadyMember) {
-            throw new UserAlreadyInGroupException(userId, group.getId());
+            throw new UserAlreadyInGroupException(
+                    authenticatedUserId,
+                    group.getId()
+            );
         }
 
-        groupMemberRepository.save(new GroupMember(group.getId(), userId));
+        groupMemberRepository.save(
+                new GroupMember(
+                        group.getId(),
+                        authenticatedUserId
+                )
+        );
+
         return group;
     }
 
     private String generateUniqueInviteCode() {
         String code;
+
         do {
             code = inviteCodeGenerator.generate();
         } while (groupRepository.existsByInviteCode(code));
+
         return code;
+    }
+
+    private UUID currentUserId() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (!(authentication instanceof JwtAuthenticationToken jwtAuthentication)) {
+            throw new AccessDeniedException(
+                    "Usuário autenticado não possui um token JWT válido"
+            );
+        }
+
+        try {
+            return UUID.fromString(jwtAuthentication.getToken().getSubject());
+        } catch (IllegalArgumentException exception) {
+            throw new AccessDeniedException(
+                    "O claim 'sub' do token não contém um UUID válido"
+            );
+        }
     }
 }

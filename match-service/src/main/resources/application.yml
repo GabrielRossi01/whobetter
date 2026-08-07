@@ -5,6 +5,12 @@ spring:
   application:
     name: match-service
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8090/realms/whobetter
+
   datasource:
     url: jdbc:postgresql://localhost:5443/match_db
     username: whobetter

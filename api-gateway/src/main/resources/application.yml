@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: api-gateway
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8090/realms/whobetter
+
   cloud:
     gateway:
       server:
@@ -12,60 +19,40 @@ spring:
             locator:
               enabled: false
           routes:
-            - id: user-service-docs
+            - id: user-service
               uri: lb://USER-SERVICE
               predicates:
-                - Path=/user-service/v3/api-docs
+                - Path=/api/users/**
               filters:
-                - RewritePath=/user-service/v3/api-docs, /v3/api-docs
-
-            - id: match-service-docs
-              uri: lb://match-service
-              predicates:
-                - Path=/match-service/v3/api-docs
-              filters:
-                - RewritePath=/match-service/v3/api-docs, /v3/api-docs
-
-            - id: prediction-service-docs
-              uri: lb://prediction-service
-              predicates:
-                - Path=/prediction-service/v3/api-docs
-              filters:
-                - RewritePath=/prediction-service/v3/api-docs, /v3/api-docs
-
-            - id: ranking-service-docs
-              uri: lb://ranking-service
-              predicates:
-                - Path=/ranking-service/v3/api-docs
-              filters:
-                - RewritePath=/ranking-service/v3/api-docs, /v3/api-docs
-
-            - id: scoring-service-docs
-              uri: lb://scoring-service
-              predicates:
-                - Path=/scoring-service/v3/api-docs
-              filters:
-                - RewritePath=/scoring-service/v3/api-docs, /v3/api-docs
+                - RewritePath=/api/users/?(?<remaining>.*), /users/$\{remaining}
 
             - id: match-service
-              uri: lb://match-service
+              uri: lb://MATCH-SERVICE
               predicates:
                 - Path=/api/matches/**
+              filters:
+                - RewritePath=/api/matches/?(?<remaining>.*), /matches/$\{remaining}
 
             - id: prediction-service
-              uri: lb://prediction-service
+              uri: lb://PREDICTION-SERVICE
               predicates:
                 - Path=/api/predictions/**
+              filters:
+                - RewritePath=/api/predictions/?(?<remaining>.*), /predictions/$\{remaining}
 
             - id: ranking-service
-              uri: lb://ranking-service
+              uri: lb://RANKING-SERVICE
               predicates:
                 - Path=/api/rankings/**
+              filters:
+                - RewritePath=/api/rankings/?(?<remaining>.*), /rankings/$\{remaining}
 
             - id: scoring-service
-              uri: lb://scoring-service
+              uri: lb://SCORING-SERVICE
               predicates:
                 - Path=/api/scores/**
+              filters:
+                - RewritePath=/api/scores/?(?<remaining>.*), /scores/$\{remaining}
 
 springdoc:
   api-docs:

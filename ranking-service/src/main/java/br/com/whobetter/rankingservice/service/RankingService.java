@@ -8,6 +8,7 @@ import br.com.whobetter.rankingservice.repository.RankingEntryRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.resilience.annotation.Retryable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class RankingService {
             jitter = 200
     )
     @Transactional
+    @PreAuthorize("hasAuthority('SCOPE_rankings:refresh')")
     public List<RankingEntry> refreshRanking(UUID groupId) {
         List<ScoreResponse> scores = scoringServiceClient.findByGroupId(groupId);
 
@@ -63,6 +65,7 @@ public class RankingService {
         return rankingEntryRepository.saveAll(updatedEntries);
     }
 
+    @PreAuthorize("hasAuthority('SCOPE_rankings:read')")
     public List<RankingEntry> findByGroupId(UUID groupId) {
         List<RankingEntry> entries = rankingEntryRepository.findByGroupIdOrderByRankPositionAsc(groupId);
 
